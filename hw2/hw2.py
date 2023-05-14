@@ -3,6 +3,16 @@ import numpy as np
 import math
 import os
 
+"""
+    Group Members
+
+    -Berke Derin Berktay
+    -Osman Yasal 
+    {Bberktay19,oyasal22}@ku.edu.tr
+
+"""
+
+
 def read_image_and_cells(image_file, txt_file):
     img = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
     cells = []
