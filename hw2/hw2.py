@@ -139,11 +139,11 @@ def visualize_clusters(image_file, cells, cluster_labels, k, colors):
         x, y, _ = cell
         cv2.circle(img, (x, y), 5, colors[label], -1)
     return img
-images_path = "/Users/derinberktay/Desktop/448/hw2/nucleus-dataset/images/"
+images_path = "./nucleus-dataset/images/"
 image_files = sorted([file for file in os.listdir(images_path) if file.endswith(".png")])
 
 def mainfunction(binNumber, d, N, k):  
-    txt_files_path = "/Users/derinberktay/Desktop/448/hw2/nucleus-dataset/txt_files/"  
+    txt_files_path = "./nucleus-dataset/txt_files/"  
     txt_files = sorted([file for file in os.listdir(txt_files_path) if file.endswith("_cells")])
     all_features = []
 
