@@ -3,16 +3,6 @@ import numpy as np
 import math
 import os
 
-"""
-    Group Members
-
-    -Berke Derin Berktay
-    -Osman Yasal 
-    {Bberktay19,oyasal22}@ku.edu.tr
-
-"""
-
-
 def read_image_and_cells(image_file, txt_file):
     img = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
     cells = []
@@ -149,11 +139,11 @@ def visualize_clusters(image_file, cells, cluster_labels, k, colors):
         x, y, _ = cell
         cv2.circle(img, (x, y), 5, colors[label], -1)
     return img
-images_path = "./nucleus-dataset/images/"
+images_path = "/Users/derinberktay/Desktop/448/hw2/nucleus-dataset/images/"
 image_files = sorted([file for file in os.listdir(images_path) if file.endswith(".png")])
 
 def mainfunction(binNumber, d, N, k):  
-    txt_files_path = "./nucleus-dataset/txt_files/"  
+    txt_files_path = "/Users/derinberktay/Desktop/448/hw2/nucleus-dataset/txt_files/"  
     txt_files = sorted([file for file in os.listdir(txt_files_path) if file.endswith("_cells")])
     all_features = []
 
@@ -181,8 +171,8 @@ def mainfunction(binNumber, d, N, k):
 parameter_combinations = [(8,1,16), (16,2,32)]  # Replace with your chosen parameter combinations
 k_values = [3, 5]
 for image_file in image_files:
-    for k in k_values:
-        for binNumber, d, N in parameter_combinations:
+    for binNumber, d, N in parameter_combinations:
+        for k in k_values:   
         # Update the feature extraction functions with the new parameters
         # Run the main function and get the results
             image_path = os.path.join(images_path, image_file)
@@ -201,6 +191,5 @@ for image_file in image_files:
                 image_path = os.path.join(images_path, image_file)
                 result_img = visualize_clusters(image_path, cells, cluster_labels, k, colors)
                 cv2.imshow(f"binNumber={binNumber}, d={d}, N={N}, k={k}, {image_file}", result_img)
-
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
