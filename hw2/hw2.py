@@ -121,7 +121,7 @@ def calculate_ratios(cells, cluster_labels, k):
     # Count the cell types in each cluster
     for cell, label in zip(cells, cluster_labels):
         cell_type = cell[2]
-        if cell_type == 'inflammatory':
+        if cell_type == 'inflammation':
             counts[label, 0] += 1
         elif cell_type == 'epithelial':
             counts[label, 1] += 1
@@ -139,11 +139,11 @@ def visualize_clusters(image_file, cells, cluster_labels, k, colors):
         x, y, _ = cell
         cv2.circle(img, (x, y), 5, colors[label], -1)
     return img
-images_path = "/Users/derinberktay/Desktop/448/hw2/nucleus-dataset/images/"
+images_path = "./nucleus-dataset/images/"
 image_files = sorted([file for file in os.listdir(images_path) if file.endswith(".png")])
 
 def mainfunction(binNumber, d, N, k):  
-    txt_files_path = "/Users/derinberktay/Desktop/448/hw2/nucleus-dataset/txt_files/"  
+    txt_files_path = "./nucleus-dataset/txt_files/"  
     txt_files = sorted([file for file in os.listdir(txt_files_path) if file.endswith("_cells")])
     all_features = []
 
@@ -180,16 +180,22 @@ for image_file in image_files:
 
             # Calculate the ratios and print them in a tabular format
             ratios = calculate_ratios(cells, cluster_labels, k)
+            #print(ratios)
             print(f"Ratios for binNumber={binNumber}, d={d}, N={N}, k={k}")
             print("Cluster | Inflammatory | Epithelial | Spindle-shaped")
             for i, (inf, epi, spi) in enumerate(ratios):
                 print(f"{i+1}      | {inf:.2f}         | {epi:.2f}      | {spi:.2f}")
-
+            #result_folder = "./nucleus-dataset/results/"
+            #if not os.path.exists(result_folder):
+            #    os.makedirs(result_folder)
             # Visualize the clusters
             colors = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]  # Define your colors
             for image_file in image_files:
                 image_path = os.path.join(images_path, image_file)
                 result_img = visualize_clusters(image_path, cells, cluster_labels, k, colors)
+                # Save the result image
+                #result_img_path = os.path.join(result_folder, f"result_binNumber={binNumber}, d={d}, N={N}, k={k}, {image_file}")
+                #cv2.imwrite(result_img_path, result_img)
                 cv2.imshow(f"binNumber={binNumber}, d={d}, N={N}, k={k}, {image_file}", result_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
