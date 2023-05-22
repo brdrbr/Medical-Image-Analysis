@@ -140,32 +140,92 @@ def visualize_clusters(image_file, cells, cluster_labels, k, colors):
         cv2.circle(img, (x, y), 5, colors[label], -1)
     return img
 images_path = "./nucleus-dataset/images/"
+txt_files_path = "./nucleus-dataset/txt_files/"
 image_files = sorted([file for file in os.listdir(images_path) if file.endswith(".png")])
 
+def compare_clusters_and_types(cells, cell_cluster_map):
+    # Initialize the counts for each cell type in each cluster
+    counts = np.zeros((k, 3))
+    cluster_counts = np.zeros((k, 3))
+
+    # Count the cell types in each cluster
+    for cell, label in cell_cluster_map.items():
+        cell_type = cell[2]
+        if cell_type == 'inflammation':
+            counts[label, 0] += 1
+        elif cell_type == 'epithelial':
+            counts[label, 1] += 1
+        else:  # cell_type == 'spindle-shaped'
+            counts[label, 2] += 1
+
+        # Increase the cluster count for the assigned cluster
+        cluster_counts[label] += 1
+
+    # Calculate the ratios
+    ratios = counts / counts.sum(axis=1, keepdims=True)
+    
+    # Print the results
+    print(f"Comparison for binNumber={binNumber}, d={d}, N={N}, k={k}")
+    print("Cluster | Inflammatory | Epithelial | Spindle-shaped | Predicted Majority")
+    for i, (inf, epi, spi) in enumerate(ratios):
+        cluster_majority = np.argmax(cluster_counts[i])
+        print(f"{i+1}      | {inf:.2f}         | {epi:.2f}      | {spi:.2f}         ")
+
 def mainfunction(binNumber, d, N, k):  
-    txt_files_path = "./nucleus-dataset/txt_files/"  
-    txt_files = sorted([file for file in os.listdir(txt_files_path) if file.endswith("_cells")])
+    training_files = [file for file in os.listdir(images_path) if file.startswith("train") and file.endswith(".png")]
+    test_files = [file for file in os.listdir(images_path) if file.startswith("test") and file.endswith(".png")]
     all_features = []
 
-    for image_file, txt_file in zip(image_files, txt_files):
+    for image_file in training_files:
         image_path = os.path.join(images_path, image_file)
+        txt_file = image_file.replace('.png', '_cells')
         txt_path = os.path.join(txt_files_path, txt_file)
         img, cells = read_image_and_cells(image_path, txt_path)
         for cell in cells:
             x, y, cell_type = cell
-            patch = img[y-N//2:y+N//2, x-N//2:x+N//2]  # Use N instead of hardcoded value
+            patch = img[y-N//2:y+N//2, x-N//2:x+N//2]
             intensity_features = calculateIntensityFeatures(patch, binNumber)
-            #cooccurrence_matrix = calculateCooccurrenceMatrix(patch, 8, 1, 1)
             accumulated_cooccurance_matrix = calculateAccumulatedCooccurrenceMatrix(patch, binNumber, d)
             coocurance_features = calculateCooccurrenceFeatures(accumulated_cooccurance_matrix)
             all_features.append(np.concatenate((intensity_features, coocurance_features)))
 
     normalized_features = normalize_features(all_features)        
     centroids, cluster_labels = k_means_clustering(normalized_features, k)
-    return cells, cluster_labels
+
+    test_cells, test_cluster_labels = apply_k_means_to_test_images(test_files, centroids, N, binNumber, d, k)
+
+    cell_cluster_map = dict(zip(test_cells, test_cluster_labels))
+    compare_clusters_and_types(test_cells, cell_cluster_map)
+    return test_cells, test_cluster_labels
+
+    
 
 
 
+def apply_k_means_to_test_images(image_files, centroids, N, binNumber, d, k):
+    all_features = []
+    cells_list = []
+
+    for image_file in image_files:
+        image_path = os.path.join(images_path, image_file)
+        txt_file = image_file.replace('.png', '_cells')
+        txt_path = os.path.join(txt_files_path, txt_file)
+        img, cells = read_image_and_cells(image_path, txt_path)
+        cells_list.extend(cells)
+        for cell in cells:
+            x, y, cell_type = cell
+            patch = img[y-N//2:y+N//2, x-N//2:x+N//2]
+            intensity_features = calculateIntensityFeatures(patch, binNumber)
+            accumulated_cooccurance_matrix = calculateAccumulatedCooccurrenceMatrix(patch, binNumber, d)
+            coocurance_features = calculateCooccurrenceFeatures(accumulated_cooccurance_matrix)
+            all_features.append(np.concatenate((intensity_features, coocurance_features)))
+
+    normalized_features = normalize_features(all_features)        
+
+    distances = np.linalg.norm(normalized_features[:, np.newaxis] - centroids, axis=2)
+    cluster_labels = np.argmin(distances, axis=1)
+
+    return cells_list, cluster_labels
 
 # Perform the experiments with different parameter combinations and k values
 parameter_combinations = [(8,1,16), (16,2,32)]  # Replace with your chosen parameter combinations
@@ -173,6 +233,7 @@ k_values = [3, 5]
 for image_file in image_files:
     for binNumber, d, N in parameter_combinations:
         for k in k_values:   
+        
         # Update the feature extraction functions with the new parameters
         # Run the main function and get the results
             image_path = os.path.join(images_path, image_file)
@@ -185,17 +246,17 @@ for image_file in image_files:
             print("Cluster | Inflammatory | Epithelial | Spindle-shaped")
             for i, (inf, epi, spi) in enumerate(ratios):
                 print(f"{i+1}      | {inf:.2f}         | {epi:.2f}      | {spi:.2f}")
-            #result_folder = "./nucleus-dataset/results/"
-            #if not os.path.exists(result_folder):
-            #    os.makedirs(result_folder)
+            result_folder = "./nucleus-dataset/results/"
+            if not os.path.exists(result_folder):
+                os.makedirs(result_folder)
             # Visualize the clusters
             colors = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]  # Define your colors
             for image_file in image_files:
                 image_path = os.path.join(images_path, image_file)
                 result_img = visualize_clusters(image_path, cells, cluster_labels, k, colors)
                 # Save the result image
-                #result_img_path = os.path.join(result_folder, f"result_binNumber={binNumber}, d={d}, N={N}, k={k}, {image_file}")
-                #cv2.imwrite(result_img_path, result_img)
-                cv2.imshow(f"binNumber={binNumber}, d={d}, N={N}, k={k}, {image_file}", result_img)
+                result_img_path = os.path.join(result_folder, f"result_binNumber={binNumber}, d={d}, N={N}, k={k}, {image_file}")
+                cv2.imwrite(result_img_path, result_img)
+                cv2.imshow(f"binNumber={binNumber}, d={d}, N={N}, k={k}, {image_file}", result_img)    
     cv2.waitKey(0)
     cv2.destroyAllWindows()
